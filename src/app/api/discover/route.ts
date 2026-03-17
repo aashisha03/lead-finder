@@ -46,22 +46,23 @@ export async function POST(req: NextRequest) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        function sendEvent(type, data) {
+        function sendEvent(type: string, data: Record<string, unknown>) {
           const payload = JSON.stringify({ type, ...data });
-          controller.enqueue(encoder.encode("data: " + payload + "\n\n"));
+          controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
         }
 
         try {
           // Run the pipeline with status callback
-          const result = await runPipeline(body, (stage, message, progress) => {
+          const result = await runPipeline(body, (stage: string, message: string, progress?: number) => {
             sendEvent("status", { stage, message, progress });
           });
 
           // Send final result
           sendEvent("result", { data: result });
-        } catch (error) {
+        } catch (error: unknown) {
+          const errMsg = error instanceof Error ? error.message : "An unexpected error occurred";
           sendEvent("error", {
-            error: error.message || "An unexpected error occurred",
+            error: errMsg,
           });
         } finally {
           controller.close();
@@ -77,11 +78,12 @@ export async function POST(req: NextRequest) {
         "X-Accel-Buffering": "no",
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Pipeline error:", error);
+    const errMsg = error instanceof Error ? error.message : "An unexpected error occurred";
     return new Response(
       JSON.stringify({
-        error: error.message || "An unexpected error occurred",
+        error: errMsg,
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
