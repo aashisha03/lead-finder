@@ -35,9 +35,9 @@ export async function POST(req: NextRequest) {
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!process.env.AI_GATEWAY_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "ANTHROPIC_API_KEY is not configured. Set it in Vercel Environment Variables." }),
+        JSON.stringify({ error: "AI_GATEWAY_API_KEY is not configured. Set it in Vercel Environment Variables." }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         function sendEvent(type: string, data: Record<string, unknown>) {
           const payload = JSON.stringify({ type, ...data });
-          controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+          controller.enqueue(encoder.encode("data: " + payload + "\n\n"));
         }
 
         try {
