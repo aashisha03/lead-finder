@@ -1,5 +1,6 @@
 /**
- * Claude LLM integration using the Anthropic SDK
+ * Claude LLM integration via Vercel AI Gateway
+ * Uses the Anthropic SDK pointed at Vercel's AI Gateway base URL
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -8,16 +9,19 @@ let client: Anthropic | null = null;
 
 function getClient(): Anthropic {
   if (!client) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.AI_GATEWAY_API_KEY;
     if (!apiKey) {
-      throw new Error("ANTHROPIC_API_KEY is not set in environment variables");
+      throw new Error("AI_GATEWAY_API_KEY is not set in environment variables");
     }
-    client = new Anthropic({ apiKey });
+    client = new Anthropic({
+      apiKey,
+      baseURL: "https://ai-gateway.vercel.sh",
+    });
   }
   return client;
 }
 
-const DEFAULT_MODEL = "claude-sonnet-4-20250514";
+const DEFAULT_MODEL = "anthropic/claude-sonnet-4.6";
 
 export async function callClaude(
   prompt: string,
