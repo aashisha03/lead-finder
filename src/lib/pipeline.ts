@@ -238,7 +238,8 @@ export async function runPipeline(
       if (ranked.emails.length === 0 && ranked.official_site) {
         try {
           const siteOrigin = new URL(ranked.official_site).origin;
-          const contactPage = await extractPage(`${siteOrigin}/contact`, {
+          const contactPage = await extractPage({
+            url: `${siteOrigin}/contact`,
             format: "text",
             strategy: "fast",
           });
