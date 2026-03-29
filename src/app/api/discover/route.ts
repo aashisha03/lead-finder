@@ -12,8 +12,8 @@ import { SearchRequest } from "@/types";
 import { runPipeline } from "@/lib/pipeline";
 
 // Vercel Pro allows up to 300s; Hobby plan is 60s.
-// Set to 120s — upgrade your Vercel plan if you need more.
-export const maxDuration = 120;
+// Set to 120s â upgrade your Vercel plan if you need more.
+export const maxDuration = 300;
 
 // Disable body size limit for streaming
 export const dynamic = "force-dynamic";
