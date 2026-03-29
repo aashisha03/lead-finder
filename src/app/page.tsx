@@ -91,11 +91,14 @@ export default function Home() {
 
     const headers = [
       "Name", "Role", "Organization", "Official Site",
+      "Emails", "Inferred Email",
       "Profile Links", "Contact Links", "Confidence", "Next Action", "Evidence",
     ];
 
     const rows = results.results.map((r) => [
       r.name, r.role, r.organization, r.official_site,
+      (r.emails || []).join(" | "),
+      r.inferred_email || "",
       (r.profile_links || []).join(" | "),
       (r.contact_links || []).join(" | "),
       String(r.confidence), r.next_best_action,

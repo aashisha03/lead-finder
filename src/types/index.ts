@@ -77,6 +77,8 @@ export interface PersonResult {
   official_site: string;
   profile_links: string[];
   contact_links: string[];
+  emails: string[];           // email addresses extracted from crawled pages
+  inferred_email?: string;    // e.g. info@domain.com — common pattern, not verified
   evidence: string[];
   confidence: number;
   next_best_action: string;

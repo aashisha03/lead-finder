@@ -80,6 +80,36 @@ export function ResultsCards({ results }: ResultsCardsProps) {
             </div>
           )}
 
+          {/* Emails */}
+          {((person.emails && person.emails.length > 0) || person.inferred_email) && (
+            <div className="mb-3">
+              <p className="text-xs font-medium text-gray-500 uppercase mb-1">Emails</p>
+              <ul className="space-y-1">
+                {(person.emails || []).map((email, i) => (
+                  <li key={i} className="flex items-center gap-1.5">
+                    <a
+                      href={`mailto:${email}`}
+                      className="text-sm text-purple-700 hover:underline break-all"
+                    >
+                      {email}
+                    </a>
+                  </li>
+                ))}
+                {person.inferred_email && (
+                  <li className="flex items-center gap-1.5">
+                    <a
+                      href={`mailto:${person.inferred_email}`}
+                      className="text-sm text-gray-400 hover:underline break-all"
+                    >
+                      {person.inferred_email}
+                    </a>
+                    <span className="text-xs text-gray-400 italic">(inferred — not verified)</span>
+                  </li>
+                )}
+              </ul>
+            </div>
+          )}
+
           {/* Evidence */}
           {person.evidence && person.evidence.length > 0 && (
             <div className="mb-3">

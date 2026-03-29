@@ -22,6 +22,26 @@ import {
 
 type StatusCallback = (stage: string, message: string, progress?: number) => void;
 
+/**
+ * Extract email addresses from raw text using regex.
+ * Filters out common placeholder/false-positive patterns.
+ */
+function extractEmailsFromText(text: string): string[] {
+  const emailRegex = /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}\b/g;
+  const found = text.match(emailRegex) || [];
+  return [...new Set(found)].filter(
+    (e) =>
+      !e.includes("example") &&
+      !e.includes("youremail") &&
+      !e.includes("user@") &&
+      !e.includes("email@") &&
+      !e.includes("name@") &&
+      !e.includes("domain.com") &&
+      !e.includes("sentry.io") &&
+      !/\.(png|jpg|gif|svg|css|js)$/i.test(e)
+  );
+}
+
 interface ExpandedQuery {
   inputType: "category" | "names";
   discoveryQueries: string[];
@@ -148,6 +168,15 @@ export async function runPipeline(
     );
     totalCrawled += crawledPages.length;
 
+    // Extract emails from all crawled page content
+    const crawlEmails: string[] = [];
+    for (const page of crawledPages) {
+      if (page.contents) {
+        crawlEmails.push(...extractEmailsFromText(page.contents));
+      }
+    }
+    const uniqueCrawlEmails = [...new Set(crawlEmails)];
+
     const pagesForClassification = urlsList.map((urlInfo) => {
       const crawled = crawledPages.find((c) => c.url === urlInfo.url);
       return {
@@ -201,6 +230,36 @@ export async function runPipeline(
         outreachValue: c.outreachValue,
         reason: c.evidence,
       }));
+
+      // Attach emails found during crawl
+      ranked.emails = uniqueCrawlEmails;
+
+      // If no emails found yet, try crawling the contact page of the official site
+      if (ranked.emails.length === 0 && ranked.official_site) {
+        try {
+          const siteOrigin = new URL(ranked.official_site).origin;
+          const contactPage = await extractPage(`${siteOrigin}/contact`, {
+            format: "text",
+            strategy: "fast",
+          });
+          if (contactPage?.contents) {
+            ranked.emails = extractEmailsFromText(contactPage.contents);
+          }
+        } catch {
+          // contact page fetch failed — not critical
+        }
+      }
+
+      // Infer info@domain.com as a low-confidence fallback if still no emails
+      if (ranked.emails.length === 0 && ranked.official_site) {
+        try {
+          const hostname = new URL(ranked.official_site).hostname.replace(/^www\./, "");
+          ranked.inferred_email = `info@${hostname}`;
+        } catch {
+          // ignore URL parse failure
+        }
+      }
+
       allPersonResults.push(ranked);
     } catch (e) {
       console.error(`Ranking parse error for ${person.name}:`, e);

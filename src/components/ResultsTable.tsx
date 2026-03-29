@@ -16,6 +16,7 @@ export function ResultsTable({ results }: ResultsTableProps) {
             <th className="px-4 py-3 text-left font-medium text-gray-700">Role</th>
             <th className="px-4 py-3 text-left font-medium text-gray-700">Organization</th>
             <th className="px-4 py-3 text-left font-medium text-gray-700">Official Site</th>
+            <th className="px-4 py-3 text-left font-medium text-gray-700">Emails</th>
             <th className="px-4 py-3 text-left font-medium text-gray-700">Top Links</th>
             <th className="px-4 py-3 text-center font-medium text-gray-700">Confidence</th>
             <th className="px-4 py-3 text-left font-medium text-gray-700">Next Action</th>
@@ -45,6 +46,27 @@ export function ResultsTable({ results }: ResultsTableProps) {
                 ) : (
                   <span className="text-gray-400">—</span>
                 )}
+              </td>
+              <td className="px-4 py-3">
+                <div className="flex flex-col gap-0.5">
+                  {(person.emails || []).map((email, i) => (
+                    <a
+                      key={i}
+                      href={`mailto:${email}`}
+                      className="text-purple-700 hover:underline text-xs"
+                    >
+                      {email}
+                    </a>
+                  ))}
+                  {(!person.emails || person.emails.length === 0) && person.inferred_email && (
+                    <span className="text-gray-400 text-xs italic">
+                      {person.inferred_email} (inferred)
+                    </span>
+                  )}
+                  {(!person.emails || person.emails.length === 0) && !person.inferred_email && (
+                    <span className="text-gray-400">—</span>
+                  )}
+                </div>
               </td>
               <td className="px-4 py-3">
                 <div className="flex flex-col gap-0.5">
