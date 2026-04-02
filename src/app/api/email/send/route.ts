@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 export async function POST(req: NextRequest) {
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailPass = process.env.GMAIL_APP_PASSWORD;
+  const apiKey = process.env.RESEND_API_KEY;
 
-  if (!gmailUser || !gmailPass) {
+  if (!apiKey) {
     return NextResponse.json(
       {
         error:
-          "Gmail not configured. Add GMAIL_USER and GMAIL_APP_PASSWORD to Vercel environment variables.",
+          "Resend not configured. Add RESEND_API_KEY to Vercel environment variables.",
       },
       { status: 503 }
     );
@@ -25,16 +24,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: gmailUser,
-        pass: gmailPass,
-      },
-    });
+    const fromAddress = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
 
-    await transporter.sendMail({
-      from: `Lead Finder <${gmailUser}>`,
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: `Lead Finder <${fromAddress}>`,
       to,
       subject,
       text: body,
@@ -44,6 +38,10 @@ export async function POST(req: NextRequest) {
         .replace(/>/g, "&gt;")
         .replace(/\n/g, "<br>"),
     });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {
