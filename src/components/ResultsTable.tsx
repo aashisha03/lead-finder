@@ -4,9 +4,10 @@ import { PersonResult } from "@/types";
 
 interface ResultsTableProps {
   results: PersonResult[];
+  onLogOutreach?: (person: PersonResult) => void;
 }
 
-export function ResultsTable({ results }: ResultsTableProps) {
+export function ResultsTable({ results, onLogOutreach }: ResultsTableProps) {
   return (
     <div className="bg-white rounded-lg shadow overflow-x-auto">
       <table className="w-full text-sm">
@@ -20,6 +21,7 @@ export function ResultsTable({ results }: ResultsTableProps) {
             <th className="px-4 py-3 text-left font-medium text-gray-700">Top Links</th>
             <th className="px-4 py-3 text-center font-medium text-gray-700">Confidence</th>
             <th className="px-4 py-3 text-left font-medium text-gray-700">Next Action</th>
+            {onLogOutreach && <th className="px-4 py-3" />}
           </tr>
         </thead>
         <tbody>
@@ -91,6 +93,16 @@ export function ResultsTable({ results }: ResultsTableProps) {
               <td className="px-4 py-3 text-gray-600 max-w-[200px]">
                 {person.next_best_action}
               </td>
+              {onLogOutreach && (
+                <td className="px-4 py-3">
+                  <button
+                    onClick={() => onLogOutreach(person)}
+                    className="text-xs text-blue-600 border border-blue-300 rounded px-2 py-1 hover:bg-blue-50 whitespace-nowrap"
+                  >
+                    ✉ Log
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

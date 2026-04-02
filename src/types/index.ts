@@ -105,6 +105,20 @@ export interface DiscoverResponse {
   };
 }
 
+/** A logged / sent outreach email */
+export interface OutreachEntry {
+  id: string;
+  project: string;
+  personName: string;
+  email: string;
+  subject: string;
+  body: string;
+  sentAt: string;          // ISO timestamp
+  status: "sent" | "logged" | "failed";
+  errorMessage?: string;
+  sourceQuery?: string;    // the original search query
+}
+
 /** Pipeline status updates sent via SSE */
 export interface PipelineStatus {
   stage: "expanding" | "searching" | "crawling" | "classifying" | "ranking" | "done" | "error";

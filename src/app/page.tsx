@@ -4,22 +4,39 @@ import { useState } from "react";
 import { SearchForm } from "@/components/SearchForm";
 import { ResultsCards } from "@/components/ResultsCards";
 import { ResultsTable } from "@/components/ResultsTable";
-import { DiscoverResponse, SearchRequest } from "@/types";
+import { TrackerView } from "@/components/TrackerView";
+import { ProjectsView } from "@/components/ProjectsView";
+import { OutreachModal } from "@/components/OutreachModal";
+import { DiscoverResponse, SearchRequest, PersonResult } from "@/types";
+
+type Tab = "search" | "tracker" | "projects";
 
 export default function Home() {
+  // Tab state
+  const [activeTab, setActiveTab] = useState<Tab>("search");
+  const [trackerRefreshKey, setTrackerRefreshKey] = useState(0);
+  const [trackerProjectFilter, setTrackerProjectFilter] = useState<string | null>(null);
+
+  // Search state
   const [results, setResults] = useState<DiscoverResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [statusMessage, setStatusMessage] = useState("");
   const [progress, setProgress] = useState(0);
+  const [lastQuery, setLastQuery] = useState("");
+
+  // Outreach modal state
+  const [outreachPerson, setOutreachPerson] = useState<PersonResult | null>(null);
 
   async function handleSearch(request: SearchRequest) {
+    setActiveTab("search");
     setLoading(true);
     setError(null);
     setResults(null);
     setStatusMessage("Starting pipeline...");
     setProgress(0);
+    setLastQuery(request.query);
 
     try {
       const response = await fetch("/api/discover", {
@@ -121,102 +138,172 @@ export default function Home() {
     URL.revokeObjectURL(url);
   }
 
+  function handleOutreachLogged() {
+    setTrackerRefreshKey((k) => k + 1);
+  }
+
+  function handleViewProjectInTracker(projectName: string) {
+    setTrackerProjectFilter(projectName);
+    setActiveTab("tracker");
+  }
+
   return (
     <main className="max-w-6xl mx-auto px-4 py-8">
-      <div className="mb-8">
+      {/* Header */}
+      <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Lead Finder</h1>
         <p className="text-gray-600 mt-1">
-          AI-powered outreach research. Enter names or a category to discover people and their best contact paths.
+          AI-powered outreach research. Find leads, send emails, and track your campaigns.
         </p>
       </div>
 
-      <SearchForm onSubmit={handleSearch} loading={loading} />
+      {/* Tab navigation */}
+      <div className="flex gap-1 mb-6 border-b border-gray-200">
+        {(
+          [
+            { id: "search", label: "🔍  Search" },
+            { id: "tracker", label: "📧  Tracker" },
+            { id: "projects", label: "📁  Projects" },
+          ] as { id: Tab; label: string }[]
+        ).map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 text-sm font-medium rounded-t-md transition-colors -mb-px border-b-2 ${
+              activeTab === tab.id
+                ? "border-blue-500 text-blue-600 bg-white"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-      {loading && (
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <div className="flex items-center gap-3">
-            <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full" />
-            <p className="text-gray-700">{statusMessage || "Processing..."}</p>
-          </div>
-          {progress > 0 && (
-            <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-500 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(progress, 100)}%` }}
-              />
-            </div>
-          )}
-          <p className="text-sm text-gray-500 mt-2">
-            This may take 30-90 seconds depending on how many people are being researched.
-          </p>
-        </div>
-      )}
+      {/* ── Search tab ── */}
+      {activeTab === "search" && (
+        <>
+          <SearchForm onSubmit={handleSearch} loading={loading} />
 
-      {error && (
-        <div className="mt-8 bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800 font-medium">Error</p>
-          <p className="text-red-700 text-sm mt-1">{error}</p>
-        </div>
-      )}
-
-      {results && (
-        <div className="mt-8">
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">
-                Results for &ldquo;{results.query}&rdquo;
-              </h2>
-              <p className="text-sm text-gray-500">
-                {results.results.length} people found &middot;{" "}
-                {results.metadata.totalSearches} searches &middot;{" "}
-                {results.metadata.totalCrawled} pages crawled &middot;{" "}
-                {(results.metadata.processingTimeMs / 1000).toFixed(1)}s
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex rounded-md border border-gray-300 overflow-hidden">
-                <button
-                  onClick={() => setViewMode("cards")}
-                  className={`px-3 py-1.5 text-sm ${
-                    viewMode === "cards"
-                      ? "bg-blue-500 text-white"
-                      : "bg-white text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  Cards
-                </button>
-                <button
-                  onClick={() => setViewMode("table")}
-                  className={`px-3 py-1.5 text-sm ${
-                    viewMode === "table"
-                      ? "bg-blue-500 text-white"
-                      : "bg-white text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  Table
-                </button>
+          {loading && (
+            <div className="mt-8 bg-white rounded-lg shadow p-6">
+              <div className="flex items-center gap-3">
+                <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full" />
+                <p className="text-gray-700">{statusMessage || "Processing..."}</p>
               </div>
-              <button
-                onClick={exportCSV}
-                className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
-              >
-                Export CSV
-              </button>
-            </div>
-          </div>
-
-          {results.results.length === 0 ? (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <p className="text-yellow-800">
-                No results found. Try broadening your search or using different terms.
+              {progress > 0 && (
+                <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(progress, 100)}%` }}
+                  />
+                </div>
+              )}
+              <p className="text-sm text-gray-500 mt-2">
+                This may take 30–90 seconds depending on how many people are being researched.
               </p>
             </div>
-          ) : viewMode === "cards" ? (
-            <ResultsCards results={results.results} />
-          ) : (
-            <ResultsTable results={results.results} />
           )}
-        </div>
+
+          {error && (
+            <div className="mt-8 bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-800 font-medium">Error</p>
+              <p className="text-red-700 text-sm mt-1">{error}</p>
+            </div>
+          )}
+
+          {results && (
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Results for &ldquo;{results.query}&rdquo;
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {results.results.length} people found &middot;{" "}
+                    {results.metadata.totalSearches} searches &middot;{" "}
+                    {results.metadata.totalCrawled} pages crawled &middot;{" "}
+                    {(results.metadata.processingTimeMs / 1000).toFixed(1)}s
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex rounded-md border border-gray-300 overflow-hidden">
+                    <button
+                      onClick={() => setViewMode("cards")}
+                      className={`px-3 py-1.5 text-sm ${
+                        viewMode === "cards"
+                          ? "bg-blue-500 text-white"
+                          : "bg-white text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      Cards
+                    </button>
+                    <button
+                      onClick={() => setViewMode("table")}
+                      className={`px-3 py-1.5 text-sm ${
+                        viewMode === "table"
+                          ? "bg-blue-500 text-white"
+                          : "bg-white text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      Table
+                    </button>
+                  </div>
+                  <button
+                    onClick={exportCSV}
+                    className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
+                  >
+                    Export CSV
+                  </button>
+                </div>
+              </div>
+
+              {results.results.length === 0 ? (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-yellow-800">
+                    No results found. Try broadening your search or using different terms.
+                  </p>
+                </div>
+              ) : viewMode === "cards" ? (
+                <ResultsCards
+                  results={results.results}
+                  onLogOutreach={setOutreachPerson}
+                />
+              ) : (
+                <ResultsTable
+                  results={results.results}
+                  onLogOutreach={setOutreachPerson}
+                />
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── Tracker tab ── */}
+      {activeTab === "tracker" && (
+        <TrackerView
+          refreshKey={trackerRefreshKey}
+          initialProject={trackerProjectFilter ?? undefined}
+        />
+      )}
+
+      {/* ── Projects tab ── */}
+      {activeTab === "projects" && (
+        <ProjectsView
+          refreshKey={trackerRefreshKey}
+          onFilterProject={handleViewProjectInTracker}
+        />
+      )}
+
+      {/* Outreach modal */}
+      {outreachPerson && (
+        <OutreachModal
+          person={outreachPerson}
+          sourceQuery={lastQuery}
+          onClose={() => setOutreachPerson(null)}
+          onLogged={handleOutreachLogged}
+        />
       )}
     </main>
   );

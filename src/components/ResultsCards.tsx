@@ -4,9 +4,10 @@ import { PersonResult } from "@/types";
 
 interface ResultsCardsProps {
   results: PersonResult[];
+  onLogOutreach?: (person: PersonResult) => void;
 }
 
-export function ResultsCards({ results }: ResultsCardsProps) {
+export function ResultsCards({ results, onLogOutreach }: ResultsCardsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {results.map((person, idx) => (
@@ -132,6 +133,18 @@ export function ResultsCards({ results }: ResultsCardsProps) {
                 <span className="font-medium text-gray-700">Next step: </span>
                 <span className="text-gray-600">{person.next_best_action}</span>
               </p>
+            </div>
+          )}
+
+          {/* Log Outreach button */}
+          {onLogOutreach && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <button
+                onClick={() => onLogOutreach(person)}
+                className="w-full py-2 text-sm font-medium text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50 transition-colors"
+              >
+                ✉ Log Outreach
+              </button>
             </div>
           )}
         </div>
